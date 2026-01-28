@@ -2,9 +2,10 @@ import os
 import yaml
 import logging
 import argparse
+import datetime
 from typing import List, Dict
 from api import AppStoreAPI
-from storage import Storage
+from storage import Storage, TimelineStorage
 from notifier import EmailNotifier, WebhookNotifier
 
 # Configure logging
@@ -25,6 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description="App Store Price Watcher")
     parser.add_argument("--config", default="config/apps.yaml", help="Path to config file")
     parser.add_argument("--data", default="data/history.json", help="Path to data file")
+    parser.add_argument("--timeline", default="data/timeline.json", help="Path to timeline file")
     args = parser.parse_args()
 
     # Load configuration
@@ -49,8 +51,11 @@ def main():
     storage = Storage(args.data)
     history = storage.load()
     
+    timeline_storage = TimelineStorage(args.timeline)
+    
     # Initialize notifiers
     notifiers = []
+    email_notifier = None
     
     # Email Notifier
     email_host = get_env_var("EMAIL_HOST")
@@ -61,7 +66,8 @@ def main():
     
     if email_host and email_user and email_pass and email_to:
         recipients = [r.strip() for r in email_to.split(",")]
-        notifiers.append(EmailNotifier(email_host, email_port, email_user, email_pass, recipients))
+        email_notifier = EmailNotifier(email_host, email_port, email_user, email_pass, recipients)
+        notifiers.append(email_notifier)
     
     # Webhook Notifier
     webhook_url = get_env_var("WEBHOOK_URL")
@@ -115,7 +121,7 @@ def main():
             else:
                 logger.info(f"New app tracked: {track_name} at {current_price} {currency}")
 
-    # Send notifications
+    # Send notifications for immediate changes
     if changes:
         logger.info(f"Sending notifications for {len(changes)} changes...")
         for notifier in notifiers:
@@ -123,11 +129,25 @@ def main():
     else:
         logger.info("No price changes detected.")
 
-    # Update history
-    # Merge new data into history, preserving existing data for apps not currently fetched if any (though here we overwrite)
-    # Actually we should update keys.
+    # Update history (current state)
     history.update(current_data_map)
     storage.save(history)
+
+    # Update timeline (daily log)
+    today_str = datetime.date.today().isoformat()
+    timeline_storage.append_daily_log(today_str, current_data_map)
+    logger.info(f"Saved daily log for {today_str}")
+
+    # Weekly Report Check (Sunday)
+    # 0 = Monday, 6 = Sunday
+    if datetime.date.today().weekday() == 6:
+        logger.info("Today is Sunday. Generating weekly report...")
+        if email_notifier:
+            # Get last 7 days of history
+            recent_history = timeline_storage.get_recent_history(days=7)
+            email_notifier.send_weekly_report(recent_history)
+        else:
+            logger.warning("Email notifier not configured. Skipping weekly report.")
 
 if __name__ == "__main__":
     main()

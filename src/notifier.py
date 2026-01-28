@@ -19,13 +19,10 @@ class EmailNotifier(Notifier):
         self.password = password
         self.recipients = recipients
 
-    def notify(self, changes: List[Dict]):
-        if not changes or not self.recipients:
+    def _send_email(self, subject: str, body: str):
+        if not self.recipients:
             return
 
-        subject = f"App Store Price Alert: {len(changes)} app(s) changed price"
-        body = self._format_body(changes)
-        
         msg = MIMEMultipart()
         msg['From'] = self.user
         msg['To'] = ", ".join(self.recipients)
@@ -36,9 +33,46 @@ class EmailNotifier(Notifier):
             with smtplib.SMTP_SSL(self.host, self.port) as server:
                 server.login(self.user, self.password)
                 server.send_message(msg)
-            logger.info("Email notification sent successfully.")
+            logger.info(f"Email '{subject}' sent successfully.")
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
+
+    def notify(self, changes: List[Dict]):
+        if not changes:
+            return
+
+        subject = f"App Store Price Alert: {len(changes)} app(s) changed price"
+        body = self._format_body(changes)
+        self._send_email(subject, body)
+
+    def send_weekly_report(self, history: Dict[str, Dict[str, dict]]):
+        """
+        Send a weekly summary report.
+        history: { "YYYY-MM-DD": { "app_id": { "name": ..., "price": ... } } }
+        """
+        if not history:
+            return
+
+        subject = "App Store Price Watcher - Weekly Report"
+        
+        lines = ["Weekly Price Report:\n"]
+        
+        for date, snapshot in history.items():
+            lines.append(f"Date: {date}")
+            if not snapshot:
+                lines.append("  No data recorded.")
+                lines.append("")
+                continue
+
+            for app_id, details in snapshot.items():
+                name = details.get("name", "Unknown")
+                price = details.get("price", "N/A")
+                currency = details.get("currency", "")
+                lines.append(f"  - {name}: {price} {currency}")
+            lines.append("")
+            
+        body = "\n".join(lines)
+        self._send_email(subject, body)
 
     def _format_body(self, changes: List[Dict]) -> str:
         lines = ["The following apps have changed price:\n"]

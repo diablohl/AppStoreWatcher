@@ -2,7 +2,7 @@ name: App Store Price Monitor
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Run every hour
+    - cron: '0 2 * * *'  # Run every day at 10:00 AM CST (02:00 UTC)
   workflow_dispatch:      # Allow manual trigger
 
 jobs:
@@ -39,4 +39,4 @@ jobs:
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "chore: update price history [skip ci]"
-        file_pattern: 'data/history.json'
+        file_pattern: 'data/history.json data/timeline.json'
