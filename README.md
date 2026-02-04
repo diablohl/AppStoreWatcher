@@ -35,14 +35,13 @@ apps:
 
 进入仓库的 **Settings** -> **Secrets and variables** -> **Actions**，点击 **New repository secret** 添加以下变量（按需配置）：
 
-| Secret Name   | 说明                                      |
-|Data|-----------------------------------------|
-| `EMAIL_HOST`  | SMTP 服务器地址 (如 smtp.qq.com)           |
-| `EMAIL_PORT`  | SMTP 端口 (默认 465 SSL)                  |
-| `EMAIL_USER`  | 发件人邮箱账号                            |
-| `EMAIL_PASS`  | 邮箱授权码/密码                           |
-| `EMAIL_TO`    | 接收通知的邮箱 (多个用逗号分隔)             |
-| `WEBHOOK_URL` | IM 工具的 Webhook 地址 (飞书/钉钉/Slack 等) |
+| Secret Name   | 说明                                      |<br>
+| `EMAIL_HOST`  | SMTP 服务器地址 (如 smtp.qq.com)           |<br>
+| `EMAIL_PORT`  | SMTP 端口 (默认 465 SSL)                  |<br>
+| `EMAIL_USER`  | 发件人邮箱账号                             |<br>
+| `EMAIL_PASS`  | 邮箱授权码/密码                            |<br>
+| `EMAIL_TO`    | 接收通知的邮箱 (多个用逗号分隔)               |<br>
+| `WEBHOOK_URL` | IM 工具的 Webhook 地址 (飞书/钉钉/Slack 等) |<br>
 
 ### 4. 启用 Workflow
 
